@@ -3,107 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Model Quantization and ONNX Conversion</title>
-    <link rel="stylesheet" href="/static/index.css">
+    <title>Model Quantization and Conversion</title>
+    <link rel="stylesheet" href="/static/index2-1.css">
 </head>
 <body>
-    <h1>Model Quantization & Conversion</h1>
-
     <div class="container">
-        <!-- 左侧：量化 -->
-        <div class="left">
-            <h2>Quantize Model</h2>
+        <h1>Model Quantization and Conversion</h1>
+
+        <!-- 模式选择 -->
+        <div class="mode-selection">
+            <label for="mode">Select Mode:</label>
+            <select id="mode">
+                <option value="quantize">Quantize Model</option>
+                <option value="convert">Convert to ONNX</option>
+            </select>
+        </div>
+
+        <!-- 量化模型部分 -->
+        <div id="quantize-section" class="section" style="display: block;">
             <form id="quantize-form" enctype="multipart/form-data">
-                <label for="model-upload">上传模型</label>
-                <input type="file" id="model-upload" name="file">
+                <h2>Quantize Model</h2>
+                <label for="quantize-file">Upload PyTorch Model:</label>
+                <input type="file" id="quantize-file" name="file" required>
 
-                <div>
-                    <label>量化类型:</label>
-                    <input type="radio" id="int8" name="quantization_type" value="int8" checked>
-                    <label for="int8">int8</label>
-                    <input type="radio" id="int4" name="quantization_type" value="int4">
-                    <label for="int4">int4</label>
-                </div>
+                <label for="quantization-type">选择量化类型:</label>
+                <select id="quantization-type" name="quantization_type">
+                    <option value="int8">INT8</option>
+                    <option value="int4">INT4</option>
+                </select>
 
-                <label for="model-type">模型类型:</label>
+                <label for="quantization-method">选择量化方法:</label>
+                <select id="quantization-method" name="quantization_method">
+                    <option value="dynamic">动态量化</option>
+                    <option value="asymmetric">非对称量化（静态量化）</option>
+                    <option value="nonlinear">非线性量化</option>
+                </select>
+
+                <label for="quantization-method2">添加量化策略:</label>
+                <select id="quantization-method2" name="quantization_method2">
+                    <option id="None" value="None" style="display: block;">None</option>
+                    <option id="MinMax" value="MinMax" style="display: block;">MinMax</option>
+                    <option id="KLD" value="KLD" style="display: none;">KLD</option>
+                    <option id="ADMM" value="ADMM" style="display: none;">ADMM</option>
+                    <option id="EQ" value="EQ" style="display: block;">EQ</option>
+                </select>
+
+                <label for="model-type">Select Model Type:</label>
                 <select id="model-type" name="model_type">
                     <option value="pytorch">PyTorch</option>
                     <option value="tensorflow">TensorFlow</option>
                 </select>
 
-                <button type="submit">量化</button>
+                <button type="button" onclick="quantizeModel()">Quantize</button>
             </form>
-
-            <div id="download-link" style="display:none;">
-                <a id="download-btn" href="#">下载量化模型</a>
-            </div>
-
-            <div id="model-structure" style="display:none;">
-                <h3>模型结构:</h3>
-                <pre id="model-structure-output"></pre>
-            </div>
+            <p id="quantized-model-structure" style="display: none;">Model Structure: <span id="model-structure-text"></span></p>
+            <a id="quantized-download-link" href="#" style="display: none;" download>Download Quantized Model</a>
         </div>
 
-        <!-- 右侧：转换为 ONNX -->
-        <div class="right">
-            <h2>Convert PyTorch to ONNX</h2>
+        <!-- 转换模型部分 -->
+        <div id="convert-section" class="section" style="display: none;">
             <form id="convert-form" enctype="multipart/form-data">
-                <label for="onnx-model-upload">上传pytorch模型</label>
-                <input type="file" id="onnx-model-upload" name="file">
-                <button type="submit">转换</button>
+                <h2>Convert PyTorch Model to ONNX</h2>
+                <label for="convert-file">Upload PyTorch Model:</label>
+                <input type="file" id="convert-file" name="file" required>
+                <button type="button" onclick="convertModel()">Convert</button>
             </form>
-
-            <div id="onnx-download-link" style="display:none;">
-                <a id="onnx-download-btn" href="#">下载 ONNX 模型</a>
-            </div>
+            <a id="onnx-download-link" href="" style="display: none;" download>Download ONNX Model</a>
         </div>
     </div>
 
+    <!-- 成功提示弹窗 -->
+    <div id="alert-box" class="alert-box" style="display: none;">
+        <p id="alert-message"></p>
+        <button onclick="closeAlert()">Close</button>
+    </div>
+
     <script>
-        // 处理量化模型表单提交
-        document.getElementById('quantize-form').onsubmit = async function(event) {
-            event.preventDefault();
-            const formData = new FormData();
-            const fileInput = document.getElementById('model-upload');
-            const quantizationType = document.querySelector('input[name="quantization_type"]:checked').value;
-            const modelType = document.getElementById('model-type').value;
+        // 切换显示不同的模式
+        document.getElementById("mode").addEventListener("change", function() {
+            const mode = this.value;
+            document.getElementById("quantize-section").style.display = mode === "quantize" ? "block" : "none";
+            document.getElementById("convert-section").style.display = mode === "convert" ? "block" : "none";
+        });
 
-            formData.append('file', fileInput.files[0]);
-            formData.append('quantization_type', quantizationType);
-            formData.append('model_type', modelType);
+        // 根据量化方法的不同显示不同的量化策略
+        document.getElementById("quantization-method").addEventListener("change", function() {
+            const mode = this.value;
+            if (mode === "dynamic"){
+                document.getElementById("MinMax").style.display = "block";
+                document.getElementById("KLD").style.display = "none";
+                document.getElementById("ADMM").style.display = "none";
+                document.getElementById("EQ").style.display = "block";
+            }else if(mode === "asymmetric"){
+                document.getElementById("MinMax").style.display = "none";
+                document.getElementById("KLD").style.display = "block";
+                document.getElementById("ADMM").style.display = "none";
+                document.getElementById("EQ").style.display = "block";
+            }else if(mode === "nonlinear"){
+                document.getElementById("MinMax").style.display = "none";
+                document.getElementById("KLD").style.display = "none";
+                document.getElementById("ADMM").style.display = "none";
+                document.getElementById("EQ").style.display = "none";
+            }
+        });
+        // 显示弹窗消息
+        function showAlert(message) {
+            document.getElementById("alert-message").innerText = message;
+            document.getElementById("alert-box").style.display = "block";
+        }
 
-            const response = await fetch('/quantize/', {
-                method: 'POST',
+        function closeAlert() {
+            document.getElementById("alert-box").style.display = "none";
+        }
+
+        // 量化模型的功能
+        async function quantizeModel() {
+            const formData = new FormData(document.getElementById("quantize-form"));
+            const response = await fetch("/quantize/", {
+                method: "POST",
                 body: formData
             });
-
             const result = await response.json();
+
             if (response.ok) {
-                document.getElementById('download-btn').href = `/download/?quantized_model=${result.quantized_model_path}`;
-                document.getElementById('download-link').style.display = 'block';
-                document.getElementById('model-structure-output').textContent = result.model_structure;
-                document.getElementById('model-structure').style.display = 'block';
+                document.getElementById("model-structure-text").innerText = result.model_structure;
+                document.getElementById("quantized-model-structure").style.display = "block";
+                document.getElementById("quantized-download-link").href = result.quantized_model_path;
+                document.getElementById("quantized-download-link").style.display = "inline";
+                showAlert("Model quantization completed successfully!");
+            } else {
+                showAlert(result.error || "Quantization failed.");
             }
-        };
+        }
 
-        // 处理转换为 ONNX 表单提交
-        document.getElementById('convert-form').onsubmit = async function(event) {
-            event.preventDefault();
-            const formData = new FormData();
-            const fileInput = document.getElementById('onnx-model-upload');
-            formData.append('file', fileInput.files[0]);
-
-            const response = await fetch('/convert/', {
-                method: 'POST',
+        // 转换模型的功能
+        async function convertModel() {
+            const formData = new FormData(document.getElementById("convert-form"));
+            const response = await fetch("/convert/", {
+                method: "POST",
                 body: formData
             });
-
             const result = await response.json();
+
             if (response.ok) {
-                document.getElementById('onnx-download-btn').href = result.onnx_model_path;
-                document.getElementById('onnx-download-link').style.display = 'block';
+                document.getElementById("onnx-download-link").href = result.onnx_model_path;
+                document.getElementById("onnx-download-link").style.display = "inline";
+                showAlert("Model conversion to ONNX completed successfully!");
+            } else {
+                showAlert(result.error || "Conversion failed.");
             }
-        };
+        }
     </script>
 </body>
 </html>
