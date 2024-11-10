@@ -6,7 +6,7 @@ from starlette.requests import Request
 import os
 import shutil
 from pathlib import Path
-from quantization import quantize_model
+from quantization2_1 import quantize_model
 from convert import convert_pytorch_to_onnx
 
 app = FastAPI()
@@ -27,7 +27,9 @@ model_type_g = ''
 async def quantize_model_endpoint(
         file: UploadFile = File(...),
         quantization_type: str = Form(...),  # int4 or int8
-        model_type: str = Form(...)  # pytorch or tensorflow
+        model_type: str = Form(...),  # pytorch or tensorflow
+        quantization_method: str = Form(...),
+        quantization_method2: str = Form(...)
 ):
     global model_type_g
     model_type_g = model_type
@@ -46,7 +48,7 @@ async def quantize_model_endpoint(
             buffer.write(await file.read())
 
         # 量化模型
-        quantized_model_path, model_structure = quantize_model(model_path, quantization_type, model_type, model_name)
+        quantized_model_path, model_structure = quantize_model(model_path, quantization_type, model_type, model_name, quantization_method, quantization_method2)
 
         return {
             "quantized_model_path": str(quantized_model_path),
