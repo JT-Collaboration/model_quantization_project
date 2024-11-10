@@ -6,7 +6,7 @@ from starlette.requests import Request
 import os
 import shutil
 from pathlib import Path
-from quantization2_1 import quantize_model
+from quantization import quantize_model
 from convert import convert_pytorch_to_onnx
 
 app = FastAPI()
