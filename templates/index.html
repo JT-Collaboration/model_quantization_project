@@ -23,7 +23,7 @@
         <div id="quantize-section" class="section" style="display: block;">
             <form id="quantize-form" enctype="multipart/form-data">
                 <h2>Quantize Model</h2>
-                <label for="quantize-file">Upload PyTorch Model:</label>
+                <label for="quantize-file">Upload PyTorch or TensorFlow Model:</label>
                 <input type="file" id="quantize-file" name="file" required>
 
                 <label for="quantization-type">选择量化类型:</label>
@@ -48,7 +48,7 @@
                     <option id="EQ" value="EQ" style="display: block;">EQ</option>
                 </select>
 
-                <label for="model-type">Select Model Type:</label>
+                <label for="model-type">选择模型类型:</label>
                 <select id="model-type" name="model_type">
                     <option value="pytorch">PyTorch</option>
                     <option value="tensorflow">TensorFlow</option>
@@ -57,18 +57,23 @@
                 <button type="button" onclick="quantizeModel()">Quantize</button>
             </form>
             <p id="quantized-model-structure" style="display: none;">Model Structure: <span id="model-structure-text"></span></p>
-            <a id="quantized-download-link" href="#" style="display: none;" download>Download Quantized Model</a>
+            <a id="quantized-download-link" href="#" style="display: none;">Download Quantized Model</a>
         </div>
 
         <!-- 转换模型部分 -->
         <div id="convert-section" class="section" style="display: none;">
             <form id="convert-form" enctype="multipart/form-data">
-                <h2>Convert PyTorch Model to ONNX</h2>
-                <label for="convert-file">Upload PyTorch Model:</label>
+                <h2>Convert PyTorch or TensorFlow Model to ONNX</h2>
+                <label for="convert-file">Upload PyTorch or TensorFlow Model:</label>
                 <input type="file" id="convert-file" name="file" required>
+                <label for="model-type">选择模型类型:</label>
+                <select id="convert-model-type" name="model_type">
+                    <option value="pytorch">PyTorch</option>
+                    <option value="tensorflow">TensorFlow</option>
+                </select>
                 <button type="button" onclick="convertModel()">Convert</button>
             </form>
-            <a id="onnx-download-link" href="" style="display: none;" download>Download ONNX Model</a>
+            <a id="onnx-download-link" href="" style="display: none;">Download ONNX Model</a>
         </div>
     </div>
 
@@ -128,7 +133,7 @@
             if (response.ok) {
                 document.getElementById("model-structure-text").innerText = result.model_structure;
                 document.getElementById("quantized-model-structure").style.display = "block";
-                document.getElementById("quantized-download-link").href = result.quantized_model_path;
+                document.getElementById("quantized-download-link").href = `/download/?quantized_model=${result.quantized_model_path}`;
                 document.getElementById("quantized-download-link").style.display = "inline";
                 showAlert("Model quantization completed successfully!");
             } else {
@@ -146,7 +151,7 @@
             const result = await response.json();
 
             if (response.ok) {
-                document.getElementById("onnx-download-link").href = result.onnx_model_path;
+                document.getElementById("onnx-download-link").href = `/download_onnx/?onnx_model=${result.onnx_model_path}`;
                 document.getElementById("onnx-download-link").style.display = "inline";
                 showAlert("Model conversion to ONNX completed successfully!");
             } else {
