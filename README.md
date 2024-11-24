@@ -3,23 +3,21 @@
 # 项目结构
 ```bash
 static
-    --index.css
 templates  # 存放前端页面
-    --index.html
 temp  # 存放量化后的模型文件
-    --model_quantized.pt
 uploads  # 存放用户上传的模型文件
-    --model.pt
 main.py
 quantization.py
 convert.py
 requirements.txt
 ```
-添加了选项将量化和转换合到一起，增加了量化方法和对应的一些量化策略。  
-主要针对pytorch模型进行改动，TensorFlow模型尚未实现  
+实现了对TensorFlow模型的转换和量化。  
 
-![image](https://github.com/user-attachments/assets/af3bdd9e-7ec5-4d56-a2e9-66cb197dd20f)  
+![image](https://github.com/user-attachments/assets/a6055b10-7464-4c29-bdad-fc7190e06b76)
 
-![image](https://github.com/user-attachments/assets/7cda1fe1-2882-4222-a3ce-82119ea40134)
+![image](https://github.com/user-attachments/assets/12028378-8fef-4987-8faa-672a10803c24)
+
+![image](https://github.com/user-attachments/assets/ddc567a8-4b8c-479d-b9e7-04fade3e1742)
+
 
 
