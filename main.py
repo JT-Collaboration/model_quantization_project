@@ -7,7 +7,7 @@ import os
 import shutil
 from pathlib import Path
 from quantization import quantize_model
-from convert import convert_pytorch_to_onnx
+from convert import convert_pytorch_to_onnx, convert_tensorflow_to_onnx
 
 app = FastAPI()
 
@@ -65,32 +65,45 @@ async def download_model(quantized_model: str):
     if not os.path.exists(quantized_model):
         raise HTTPException(status_code=404, detail="File not found")
     filename = ''
-    if model_type_g == 'pytorch':
+    '''if model_type_g == 'pytorch':
         filename = f"{model_name}_quantized.pt"
     elif model_type_g == 'tensorflow':
-        filename = f"{model_name}_quantized.tflite"
+        filename = f"{model_name}_quantized.tflite"'''
     # print(filename)
+    filename = f"{model_name}_quantized.pt"
     return FileResponse(path=quantized_model, filename=filename)
 
 # 转换 PyTorch 模型为 ONNX
 @app.post("/convert/")
-async def convert_to_onnx(file: UploadFile = File(...)):
+async def convert_to_onnx(
+        file: UploadFile = File(...),
+        model_type: str = Form(...)):
     # 保存上传的模型文件
     model_path = os.path.join(UPLOAD_FOLDER, file.filename)
     with open(model_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
+    # model_path = UPLOAD_FOLDER / file.filename
+    global model_name, onnx_model_path  # 全局变量，保存模型名字
+
+    model_name = os.path.splitext(file.filename)[0]
+    print(model_name)
+
     # 调用转换函数
-    onnx_model_path = convert_pytorch_to_onnx(model_path, ONNX_DIR)
+    if model_type == "pytorch":
+        onnx_model_path = convert_pytorch_to_onnx(model_name, model_path, ONNX_DIR)
+    elif model_type == "tensorflow":
+        onnx_model_path = convert_tensorflow_to_onnx(model_name, model_path, ONNX_DIR)
 
     return JSONResponse({
-        "onnx_model_path": f"/download_onnx/?onnx_model={onnx_model_path}"
+        "onnx_model_path": onnx_model_path
     })
 
 # ONNX 模型下载
 @app.get("/download_onnx/")
 async def download_onnx_model(onnx_model: str):
-    return FileResponse(onnx_model)
+    filename = f'{model_name}.onnx'
+    return FileResponse(path=onnx_model, filename=filename)
 
 
 # 显示前端页面
